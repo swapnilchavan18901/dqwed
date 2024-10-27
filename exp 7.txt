@@ -1,0 +1,139 @@
+import math
+
+# Create a sample input file
+filename = "test.txt"
+with open(filename, 'w') as f:
+    f.write("1010101010101010101")  # Example sequence of "1"s and "0"s
+
+container = {}
+windowsize = 1000
+timestamp = 0
+updateinterval = 1000  # no larger than the windowsize
+updateindex = 0
+keysnum = int(math.log(windowsize, 2)) + 1
+keylist = []
+
+# Initialize the container
+for i in range(keysnum):
+    key = int(math.pow(2, i))
+    keylist.append(key)
+    container[key] = []
+
+def UpdateContainer(inputdict, klist, numkeys):
+    for key in klist:
+        if len(inputdict[key]) > 2:
+            inputdict[key].pop(0)
+            tstamp = inputdict[key].pop(0)
+            if key != klist[-1]:
+                inputdict[key * 2].append(tstamp)
+            else:
+                break
+
+def OutputResult(inputdict, klist, wsize):
+    cnt = 0
+    firststamp = 0
+    for key in klist:
+        if len(inputdict[key]) > 0:
+            firststamp = inputdict[key][0]
+            for tstamp in inputdict[key]:
+                print(f"size of bucket: {key}, timestamp: {tstamp}")
+    for key in klist:
+        for tstamp in inputdict[key]:
+            if tstamp != firststamp:
+                cnt += key
+            else:
+                cnt += 0.5 * key
+    print(f"Estimated number of ones in the last {wsize} bits: {cnt}")
+
+# Read the input file
+with open(filename, 'r') as sfile:
+    while True:
+        char = sfile.read(1)
+        if not char:  # no more input
+            OutputResult(container, keylist, windowsize)
+            break
+        timestamp = (timestamp + 1) % windowsize
+        for k in list(container.keys()):  # use list to avoid modifying while iterating
+            for itemstamp in container[k][:]:  # iterate over a copy to remove safely
+                if itemstamp == timestamp:  # remove record which is out of the window
+                    container[k].remove(itemstamp)
+        if char == "1":  # add it to the container
+            container[1].append(timestamp)
+        UpdateContainer(container, keylist, keysnum)
+        updateindex = (updateindex + 1) % updateinterval
+        if updateindex == 0:
+            OutputResult(container, keylist, windowsize)
+    print("\n")
+
+
+
+
+
+
+
+Bloom filter:
+
+
+
+
+import random
+import hashlib
+
+class SimpleBloomFilter:
+    def __init__(self, size, num_hashes):
+        self.size = size
+        self.num_hashes = num_hashes
+        self.bit_array = [0] * size
+
+    def _hashes(self, item):
+        """Generate hash indices for the given item."""
+        hashes = []
+        for i in range(self.num_hashes):
+            # Use a hash function to compute indices
+            hash_result = int(hashlib.md5(item.encode('utf-8')).hexdigest(), 16)
+            hashes.append((hash_result + i) % self.size)
+        return hashes
+
+    def add(self, item):
+        """Add an item to the Bloom filter."""
+        for index in self._hashes(item):
+            self.bit_array[index] = 1
+
+    def check(self, item):
+        """Check if an item is in the Bloom filter."""
+        return all(self.bit_array[index] for index in self._hashes(item))
+
+
+# Define a sample Bloom filter
+bloomf = SimpleBloomFilter(size=100, num_hashes=10)
+
+# Sample present words
+word_present = ['hello', 'world', 'python', 'programming', 'bloom', 
+                'filter', 'data', 'structure', 'algorithm', 'test']
+
+# Words that are not present
+word_absent = ['bluff', 'cheater', 'hate', 'war', 'humanity',
+               'racism', 'hurt', 'nuke', 'gloomy', 'facebook',
+               'geeksforgeeks', 'twitter']
+
+# Add words to Bloom filter
+for item in word_present:
+    bloomf.add(item)
+
+# Shuffle the lists
+random.shuffle(word_present)
+random.shuffle(word_absent)
+
+# Create test words
+test_words = word_present[:10] + word_absent
+random.shuffle(test_words)
+
+# Check presence of each test word
+for word in test_words:
+    if bloomf.check(word):
+        if word in word_absent:
+            print("'%s' is a false positive!" % word)
+        else:
+            print("'%s' is probably present!" % word)
+    else:
+        print("'%s' is definitely not present!" % word)

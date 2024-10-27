@@ -1,0 +1,54 @@
+from collections import OrderedDict
+
+class MapReduce:
+    def __init__(self):
+        self.intermediate = OrderedDict()
+        self.result = []
+
+    def emitIntermediate(self, key, value):
+        self.intermediate.setdefault(key, [])
+        self.intermediate[key].append(value)
+
+    def emit(self, value):
+        self.result[value[0]][value[1]] = value[2]
+
+    def execute(self, matrix1, matrix2, mapper, reducer):
+        n = len(matrix1)
+        m = len(matrix2[0])
+        for i in range(n):
+            self.result.append([0] * m)
+        mapper(matrix1, matrix2)
+
+        for key in self.intermediate:
+            reducer(key, self.intermediate[key])
+        
+        for i in range(n):
+            row = " ".join(str(self.result[i][j]) for j in range(m))
+            print(row)
+
+def mapper(matrix1, matrix2):
+    n = len(matrix1)
+    l = len(matrix2)
+    m = len(matrix2[0])
+    for i in range(n):
+        for j in range(m):
+            mapReducer.emitIntermediate((i, j), matrix1[i])
+            column = [matrix2[k][j] for k in range(l)]
+            mapReducer.emitIntermediate((i, j), column)
+
+def reducer(key, list_of_values):
+    l1 = list_of_values[0]
+    l2 = list_of_values[1]
+    dot_product = sum(l1[i] * l2[i] for i in range(len(l1)))
+    mapReducer.emit((key[0], key[1], dot_product))
+
+if __name__ == '__main__':
+    import sys
+    
+    # Replace input method for testing in Colab
+    testcases = 1  # Change this to the number of test cases you want
+    matrix1 = [[1, 2, 3], [4, 5, 6]]  # Example input matrix 1
+    matrix2 = [[7, 8], [9, 10], [13, 14]]  # Example input matrix 2
+
+    mapReducer = MapReduce()
+    mapReducer.execute(matrix1, matrix2, mapper, reducer)
